@@ -192,7 +192,7 @@ def main():
                              batch_size=torch.Size([1, configs.n_j*configs.n_m, configs.n_j*configs.n_m]),
                              n_nodes=configs.n_j*configs.n_m,
                              device=device)
-    # training loop
+    # NOTE: training loop
     log = []
     validation_log = []
     optimal_gaps = []
