@@ -12,6 +12,7 @@ from validation import validate
 
 device = torch.device(configs.device)
 
+import wandb
 
 class Memory:
     def __init__(self):
@@ -273,8 +274,15 @@ def main():
         # log results
         print('Episode {}\t Last reward: {:.2f}\t Mean_Vloss: {:.8f}'.format(
             i_update + 1, mean_rewards_all_env, v_loss))
+        wandb.log({
+            "train/step": i_update,
+            "train/Last reward": mean_rewards_all_env,
+            "train/Mean Vloss": v_loss
+        })
+
         
         # validate and save use mean performance
+        vali_result = 0
         t4 = time.time()
         if (i_update + 1) % 100 == 0:
             vali_result = - validate(vali_data, ppo.policy).mean()
@@ -287,13 +295,22 @@ def main():
             file_writing_obj1 = open(
                 './' + 'vali_' + str(configs.n_j) + '_' + str(configs.n_m) + '_' + str(configs.low) + '_' + str(configs.high) + '.txt', 'w')
             file_writing_obj1.write(str(validation_log))
+            wandb.log({
+                "valid/step": (i_update + 1)/100,
+                "valid/Validation Quality": vali_result
+            })
         t5 = time.time()
-
+        
         # print('Training:', t4 - t3)
-        # print('Validation:', t5 - t4)
+        # print('Validation:', t5 - t4)        
 
 
 if __name__ == '__main__':
+    wandb.init(project="JSSP", entity="mencse", config = vars(configs))
+    wandb.define_metric("train/step")
+    wandb.define_metric("train/*", step_metric="train/step")
+    wandb.define_metric("valid/step")
+    wandb.define_metric("valid/*", step_metric="valid/step")
     total1 = time.time()
     main()
     total2 = time.time()

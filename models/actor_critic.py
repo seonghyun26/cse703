@@ -35,13 +35,16 @@ class ActorCritic(nn.Module):
         self.n_ops_perjob = n_m
         self.device = device
 
-        self.feature_extract = GraphCNN(num_layers=num_layers,
-                                        num_mlp_layers=num_mlp_layers_feature_extract,
-                                        input_dim=input_dim,
-                                        hidden_dim=hidden_dim,
-                                        learn_eps=learn_eps,
-                                        neighbor_pooling_type=neighbor_pooling_type,
-                                        device=device).to(device)
+        # NOTE: feature Extract #1
+        self.feature_extract = GraphCNN(
+            num_layers=num_layers,
+            num_mlp_layers=num_mlp_layers_feature_extract,
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            learn_eps=learn_eps,
+            neighbor_pooling_type=neighbor_pooling_type,
+            device=device
+        ).to(device)
         self.actor = MLPActor(num_mlp_layers_actor, hidden_dim*2, hidden_dim_actor, 1).to(device)
         self.critic = MLPCritic(num_mlp_layers_critic, hidden_dim, hidden_dim_critic, 1).to(device)
 
@@ -53,7 +56,7 @@ class ActorCritic(nn.Module):
                 candidate,
                 mask,
                 ):
-
+        # NOTE: feature Extract #2
         h_pooled, h_nodes = self.feature_extract(x=x,
                                                  graph_pool=graph_pool,
                                                  padded_nei=padded_nei,
