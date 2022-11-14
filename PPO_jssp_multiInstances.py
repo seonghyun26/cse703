@@ -159,11 +159,16 @@ class PPO:
 def main():
 
     from JSSP_Env import SJSSP
+    # YJ - generate # of 'configs.num_envs' independent trajectories (i.e. instances) 
     envs = [SJSSP(n_j=configs.n_j, n_m=configs.n_m) for _ in range(configs.num_envs)]
     
     from uniform_instance_gen import uni_instance_gen
     data_generator = uni_instance_gen
 
+    '''YJ - Shape: (100, 2, 15, 15) = (# of instances, Dim of embedding vectors, # of 'jobs', # of 'machines')
+    * Raw features for each node at s_t as a 2D vector h^(0)(s_t) = (I(O, s_t), C_LB(O, s_t))
+        1) I(O, s_t) : 1 only if O is scheduled in s_t
+        2) C_LB(O, s_t) : Lower bound of the estimated time of completion time of O in s_t'''
     dataLoaded = np.load('./DataGen/generatedData' + str(configs.n_j) + '_' + str(configs.n_m) + '_Seed' + str(configs.np_seed_validation) + '.npy')
     vali_data = []
     for i in range(dataLoaded.shape[0]):
