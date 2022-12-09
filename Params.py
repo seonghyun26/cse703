@@ -2,7 +2,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Arguments for ppo_jssp')
 # args for device
-parser.add_argument('--device', type=str, default="cuda", help='Number of jobs of instances')
+parser.add_argument('--device', type=str, default="cuda:0", help='Number of jobs of instances')
 # args for env
 parser.add_argument('--n_j', type=int, default=15, help='Number of jobs of instance')
 parser.add_argument('--n_m', type=int, default=15, help='Number of machines instance')
@@ -18,7 +18,7 @@ parser.add_argument('--et_normalize_coef', type=int, default=1000, help='Normali
 parser.add_argument('--wkr_normalize_coef', type=int, default=100, help='Normalizing constant for wkr, normalization way: fea/constant')
 # args for network
 parser.add_argument('--network_name', type=str, default='GCN', help='type of graph network we are using')
-parser.add_argument('--num_layers', type=int, default=2, help='No. of layers of feature extraction GNN including input layer')
+parser.add_argument('--num_layers', type=int, default=3, help='No. of layers of feature extraction GNN including input layer')
 parser.add_argument('--neighbor_pooling_type', type=str, default='sum', help='neighbour pooling type')
 parser.add_argument('--graph_pool_type', type=str, default='average', help='graph pooling type')
 parser.add_argument('--input_dim', type=int, default=2, help='number of dimension of raw node features')

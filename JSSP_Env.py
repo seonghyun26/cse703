@@ -46,6 +46,8 @@ class SJSSP(gym.Env, EzPickle):
 
             # UPDATE STATE:
             # permissible left shift
+            # NOTE: here, permissibleLeftShift
+            # TODO:
             startTime_a, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
             self.flags.append(flag)
             # update omega or mask
@@ -103,9 +105,11 @@ class SJSSP(gym.Env, EzPickle):
         self.adj = self_as_nei + conj_nei_up_stream
 
         # initialize features
+        # NOTE: LB = Lower Bound
         self.LBs = np.cumsum(self.dur, axis=1, dtype=np.single)
         self.initQuality = self.LBs.max() if not configs.init_quality_flag else 0
         self.max_endTime = self.initQuality
+        # NOTE: finished_mark = machine used mark
         self.finished_mark = np.zeros_like(self.m, dtype=np.single)
 
         fea = np.concatenate((self.LBs.reshape(-1, 1)/configs.et_normalize_coef,

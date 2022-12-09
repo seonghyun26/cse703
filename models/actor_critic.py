@@ -30,8 +30,10 @@ class ActorCritic(nn.Module):
         super(ActorCritic, self).__init__()
         # job size for problems, no business with network
         self.n_j = n_j
+        print("# of jobs: " + str(n_j))
         # machine size for problems, no business with network
         self.n_m = n_m
+        print("# of machines: " + str(n_m))
         self.n_ops_perjob = n_m
         self.device = device
 
@@ -61,6 +63,8 @@ class ActorCritic(nn.Module):
                                                  graph_pool=graph_pool,
                                                  padded_nei=padded_nei,
                                                  adj=adj)
+        # print(adj.shape)
+        # print(type(adj))
         # prepare policy feature: concat omega feature with global feature
         dummy = candidate.unsqueeze(-1).expand(-1, self.n_j, h_nodes.size(-1))
         candidate_feature = torch.gather(h_nodes.reshape(dummy.size(0), -1, dummy.size(-1)), 1, dummy)
