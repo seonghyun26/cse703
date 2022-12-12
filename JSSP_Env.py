@@ -6,7 +6,11 @@ from updateEntTimeLB import calEndTimeLB
 from Params import configs
 from permissibleLS import permissibleLeftShift
 from updateAdjMat import getActionNbghs
+import torch
+import os
+from model import LocalWLNet
 
+PATH = "/models/saved/"
 
 class SJSSP(gym.Env, EzPickle):
     def __init__(self,
@@ -24,6 +28,12 @@ class SJSSP(gym.Env, EzPickle):
         self.last_col = np.arange(start=0, stop=self.number_of_tasks, step=1).reshape(self.number_of_jobs, -1)[:, -1]
         self.getEndTimeLB = calEndTimeLB
         self.getNghbs = getActionNbghs
+        
+        # NOTE: generate gnn for each SJSSP instance to use for link prediction
+        model = torch.load(os.getcwd() + PATH + '20221212_174850_2WL_dict.pt', map_location=configs.device)  
+        model.load_state_dict(torch.load(os.getcwd() + PATH + '20221212_174850_2WL_state_dict.pt'))
+        # device = torch.device(configs.device)
+        self.gnn = model
 
     def done(self):
         if len(self.partial_sol_sequeence) == self.number_of_tasks:
@@ -33,7 +43,7 @@ class SJSSP(gym.Env, EzPickle):
     @override
     def step(self, action):
         # action is a int 0 - 224 for 15x15 for example
-        # redundant action makes no effect
+        # redundant action makes no effects
         if action not in self.partial_sol_sequeence:
 
             # UPDATE BASIC INFO:
@@ -47,8 +57,11 @@ class SJSSP(gym.Env, EzPickle):
             # UPDATE STATE:
             # permissible left shift
             # NOTE: here, permissibleLeftShift
-            # TODO:
-            startTime_a, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+            # NOTE: startTime_a: int, flag: bool
+            # TODO: replace permissibleLeftShift function with ours
+            # startTime_a, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+            startTime_a, flag = self.predictLinkByGNN(action=action)
+            
             self.flags.append(flag)
             # update omega or mask
             if action not in self.last_col:
@@ -130,3 +143,15 @@ class SJSSP(gym.Env, EzPickle):
         self.temp1 = np.zeros_like(self.dur, dtype=np.single)
 
         return self.adj, fea, self.omega, self.mask
+
+    def predictLinkByGNN(self, action):
+        durMat=self.dur
+        mchMat=self.m
+        mchsStartTimes=self.mchsStartTimes
+        opIDsOnMchs=self.opIDsOnMchs
+        gnn = self.gnn
+        
+        startTime = 0
+        flag = True
+        statTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+        return startTime, flag
