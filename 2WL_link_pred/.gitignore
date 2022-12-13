@@ -1,0 +1,7 @@
+__pycache__/*
+*/__pycache__
+wandb/
+dataset/
+checkpoint/
+
+*.DS_Store

@@ -1,0 +1,7 @@
+python -c "import torch; print(torch.__version__)"
+
+python -c "import torch; print(torch.version.cuda)"
+
+pip install torch-scatter -f https://data.pyg.org/whl/torch-1.10.0+cu111.html
+pip install torch-sparse -f https://data.pyg.org/whl/torch-1.10.0+cu111.html
+pip install torch-geometric
