@@ -19,7 +19,7 @@ for i in index:
     data = Data(x=x, edge_index = edge_index.t().contiguous())
     final_result[i] = data
 
-
+print(final_result)
 # for i in index:
 
 #     n_job = n_pair[(i-1)//10][0]

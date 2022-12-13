@@ -9,6 +9,8 @@ from updateAdjMat import getActionNbghs
 import torch
 import os
 from model import LocalWLNet
+from torch_geometric.data import Data
+import itertools
 
 PATH = "/../2WL_link_pred/checkpoint/"
 DIR = "20221213_111636/"
@@ -61,7 +63,12 @@ class SJSSP(gym.Env, EzPickle):
             # NOTE: startTime_a: int, flag: bool
             # TODO: replace permissibleLeftShift function with ours
             # startTime_a, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+            # print(self.mchsStartTimes)
             startTime_a, flag = self.predictLinkByGNN(action=action)
+            # print(startTime_a)
+            # print(flag)
+            # print(self.mchsStartTimes)
+            
             
             self.flags.append(flag)
             # update omega or mask
@@ -155,31 +162,53 @@ class SJSSP(gym.Env, EzPickle):
         
         # TODO: Create dataset wtih above info
         # dataset = Data()
-        dataset = 0
+        mNum = self.m.shape[0]
+        jNum = self.m.shape[1]
+        opList = opIDsOnMchs.flatten()
+        opList = opList[opList >= 0]
+        completionTime = torch.tensor(mchsStartTimes + durMat, dtype=torch.long)
+        
+        node = torch.stack([completionTime, torch.tensor(durMat), torch.arange(0, jNum).expand(mNum, jNum)], dim=2).reshape(jNum * mNum, 3)
+        node.to(configs.device)
+        
+        edge = []
+        for row in opIDsOnMchs:
+            for idx, element in enumerate(row):
+                if idx+1 is not len(row) and element>=0 and row[idx+1]>=0:
+                    edge.append([row[idx], row[idx+1]])
+        for jobNum, job in enumerate(mchMat):
+            for idx, operation in enumerate(job):
+                if idx+1 is not len(job):
+                    op1 = jobNum*mchMat.shape[1] + idx
+                    op2 = jobNum*mchMat.shape[1] + idx+1 
+                    if op1 in opList and op2 in opList:
+                        edge.append([op1, op2])
+        edge = np.transpose(edge)
+        dataset = Data(x=node, ei=edge, pos=edge)
         
         mod.eval()
-        if isinstance(mod, LocalWLNet):
-            pred = mod(
-                dataset.x,
-                dataset.ei,
-                dataset.pos1,
-                dataset.ei.shape[1]
-                + torch.arange(dataset.y.shape[0], device=dataset.x.device),
-                dataset.ei2,
-                True,
-            )
-        else:
-            pred_links = dataset.pos1[
-                dataset.ei.shape[1]
-                + torch.arange(dataset.y.shape[0], device=dataset.x.device)
-            ][:, 0].reshape(-1, 2)
-            pred = mod(dataset.x, dataset.ei, pred_links, dataset.ei2, True)
+        # if isinstance(mod, LocalWLNet):
+        #     pred = mod(
+        #         dataset.x,
+        #         dataset.ei,
+        #         dataset.pos1,
+        #         dataset.ei.shape[1]
+        #         + torch.arange(dataset.y.shape[0], device=configs.device),
+        #         dataset.ei2,
+        #         True,
+        #     )
+        # else:
+        #     pred = mod(dataset.x, dataset.ei, dataset.pos, test=True)
         
-        maxindex = np.argmax(pred)
+        # maxIndex = np.argmax(pred.unsqueeze(-1).tolist())
+        # selectedEdgeIndex = maxIndex
         
         startTime = 0
         flag = True
         
-        statTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+        # TODO: algorithm
+        # startTime: new operatioin start time
+        # flag: true if other opartion start time changed
+        startTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
         
         return startTime, flag
