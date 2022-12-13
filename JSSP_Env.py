@@ -10,7 +10,8 @@ import torch
 import os
 from model import LocalWLNet
 
-PATH = "/models/saved/"
+PATH = "/../2WL_link_pred/checkpoint/"
+DIR = "20221213_111636/"
 
 class SJSSP(gym.Env, EzPickle):
     def __init__(self,
@@ -30,8 +31,8 @@ class SJSSP(gym.Env, EzPickle):
         self.getNghbs = getActionNbghs
         
         # NOTE: generate gnn for each SJSSP instance to use for link prediction
-        model = torch.load(os.getcwd() + PATH + '20221212_174850_2WL_dict.pt', map_location=configs.device)  
-        model.load_state_dict(torch.load(os.getcwd() + PATH + '20221212_174850_2WL_state_dict.pt'))
+        model = torch.load(os.getcwd() + PATH + DIR + '2WL_dict_9.pt', map_location=configs.device)  
+        model.load_state_dict(torch.load(os.getcwd() + PATH + DIR + '2WL_state_dict_9.pt'))
         # device = torch.device(configs.device)
         self.gnn = model
 
@@ -149,9 +150,36 @@ class SJSSP(gym.Env, EzPickle):
         mchMat=self.m
         mchsStartTimes=self.mchsStartTimes
         opIDsOnMchs=self.opIDsOnMchs
-        gnn = self.gnn
+        mod = self.gnn
+        # x, na, ei, ea, pos1, y, ei2
+        
+        # TODO: Create dataset wtih above info
+        # dataset = Data()
+        dataset = 0
+        
+        mod.eval()
+        if isinstance(mod, LocalWLNet):
+            pred = mod(
+                dataset.x,
+                dataset.ei,
+                dataset.pos1,
+                dataset.ei.shape[1]
+                + torch.arange(dataset.y.shape[0], device=dataset.x.device),
+                dataset.ei2,
+                True,
+            )
+        else:
+            pred_links = dataset.pos1[
+                dataset.ei.shape[1]
+                + torch.arange(dataset.y.shape[0], device=dataset.x.device)
+            ][:, 0].reshape(-1, 2)
+            pred = mod(dataset.x, dataset.ei, pred_links, dataset.ei2, True)
+        
+        maxindex = np.argmax(pred)
         
         startTime = 0
         flag = True
+        
         statTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+        
         return startTime, flag
