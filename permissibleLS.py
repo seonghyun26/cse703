@@ -3,7 +3,57 @@ import numpy as np
 
 def rescheduleWithLink(e, a, numMch, durMat, mchMat, mchsStartTimes, opIDsOnMchs):
     
-    u, v = e[0], e[1]
+    u1, v1 = e[0][0], e[0][1]
+    u2, v2 = e[1][0], e[1][1]
+
+    jobRdyTime_a, mchRdyTime_a = calJobAndMchRdyTimeOfa(a, mchMat, durMat, mchsStartTimes, opIDsOnMchs)
+    dur_a = np.take(durMat, a)
+    mch_a = np.take(mchMat, a) - 1
+    startTimesForMchOfa = mchsStartTimes[mch_a]
+    opsIDsForMchOfa = opIDsOnMchs[mch_a]
+    flag = False
+
+    if u1 == a:
+        v_id = np.where(opIDsOnMchs[numMch]==int(v1))[0]
+        possiblePos = [v_id]
+        idxLegalPos, legalPos, endTimesForPossiblePos = calLegalPos(dur_a, jobRdyTime_a, durMat, possiblePos, startTimesForMchOfa, opsIDsForMchOfa)
+        if len(legalPos) == 0:
+            startTime_a1 = max(jobRdyTime_a, mchRdyTime_a)
+        else:
+            earlstIdx = idxLegalPos[0]
+            startTime_a1 = endTimesForPossiblePos[earlstIdx]
+    elif v1 == a:
+        u_id = np.where(opIDsOnMchs[numMch]==int(u1))[0]
+        possiblePos = [u_id+1]
+        idxLegalPos, legalPos, endTimesForPossiblePos = calLegalPos(dur_a, jobRdyTime_a, durMat, possiblePos, startTimesForMchOfa, opsIDsForMchOfa)
+        if len(legalPos) == 0:
+            startTime_a1 = max(jobRdyTime_a, mchRdyTime_a)
+        else:
+            earlstIdx = idxLegalPos[0]
+            startTime_a1 = endTimesForPossiblePos[earlstIdx]
+    if u2 == a:
+        v_id = np.where(opIDsOnMchs[numMch]==int(v2))[0]
+        possiblePos = [v_id]
+        idxLegalPos, legalPos, endTimesForPossiblePos = calLegalPos(dur_a, jobRdyTime_a, durMat, possiblePos, startTimesForMchOfa, opsIDsForMchOfa)
+        if len(legalPos) == 0:
+            startTime_a2 = max(jobRdyTime_a, mchRdyTime_a)
+        else:
+            earlstIdx = idxLegalPos[0]
+            startTime_a2 = endTimesForPossiblePos[earlstIdx]
+    elif v2 == a:
+        u_id = np.where(opIDsOnMchs[numMch]==int(u2))[0]
+        possiblePos = [u_id+1]
+        idxLegalPos, legalPos, endTimesForPossiblePos = calLegalPos(dur_a, jobRdyTime_a, durMat, possiblePos, startTimesForMchOfa, opsIDsForMchOfa)
+        if len(legalPos) == 0:
+            startTime_a2 = max(jobRdyTime_a, mchRdyTime_a)
+        else:
+            earlstIdx = idxLegalPos[0]
+            startTime_a2 = endTimesForPossiblePos[earlstIdx]
+
+    if startTime_a1 - startTime_a2 < 0:
+        u, v = u1, v1
+    else:
+        u, v = u2, v2
 
     if u == a:
         v_id = np.where(opIDsOnMchs[numMch]==int(v))[0]

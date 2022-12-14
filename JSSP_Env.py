@@ -250,6 +250,6 @@ class SJSSP(gym.Env, EzPickle):
         # TODO: algorithm
         # startTime: new operatioin start time
         # flag: true if other opartion start time changed
-        startTime, flag = rescheduleWithLink(e = edgeToAdd[0], a=action, numMch = machineNumber, durMat = self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
-        # startTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+        startTime, flag = rescheduleWithLink(e = edgeToAdd, a=action, numMch = machineNumber, durMat = self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+        #startTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
         return startTime, flag
