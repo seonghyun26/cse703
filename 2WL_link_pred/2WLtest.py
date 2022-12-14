@@ -112,6 +112,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     # print(args.dataset)
+    print(args.instanceSize)
     
     if args.device < 0:
         args.device = "cpu"

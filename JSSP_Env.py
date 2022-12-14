@@ -12,8 +12,8 @@ from model import LocalWLNet
 from torch_geometric.data import Data
 import itertools
 
-PATH = "/../2WL_link_pred/checkpoint/"
-DIR = "20221213_111636/"
+PATH = "/2WL_link_pred/checkpoint/"
+DIR = "20221214_15_15/"
 
 class SJSSP(gym.Env, EzPickle):
     def __init__(self,
@@ -33,8 +33,9 @@ class SJSSP(gym.Env, EzPickle):
         self.getNghbs = getActionNbghs
         
         # NOTE: generate gnn for each SJSSP instance to use for link prediction
-        model = torch.load(os.getcwd() + PATH + DIR + '2WL_dict_9.pt', map_location=configs.device)  
-        model.load_state_dict(torch.load(os.getcwd() + PATH + DIR + '2WL_state_dict_9.pt'))
+        model = torch.load(os.getcwd() + PATH + DIR + '2WL_dict_15_15_9.pt')  
+        model.load_state_dict(torch.load(os.getcwd() + PATH + DIR + '2WL_state_dict_15_15_9.pt'))
+        model.to(configs.device)
         # device = torch.device(configs.device)
         self.gnn = model
 
@@ -160,13 +161,26 @@ class SJSSP(gym.Env, EzPickle):
         mod = self.gnn
         # x, na, ei, ea, pos1, y, ei2
         
+        machineNumber = mchMat[action//self.number_of_machines][action%self.number_of_machines] - 1
+        if opIDsOnMchs[machineNumber][1] < 0:
+            startTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+            return startTime, flag
+        
+        # print("FLAG2")
+        
         # TODO: Create dataset wtih above info
-        # dataset = Data()
-        mNum = self.m.shape[0]
-        jNum = self.m.shape[1]
+        jNum = self.number_of_jobs
+        mNum = self.number_of_machines
         opList = opIDsOnMchs.flatten()
         opList = opList[opList >= 0]
-        completionTime = torch.tensor(mchsStartTimes + durMat, dtype=torch.long)
+        # completionTime = torch.tensor(mchsStartTimes + durMat, dtype=torch.long)
+        # completionTime.to(configs.device)
+        completionTime = torch.zeros([durMat.shape[0], durMat.shape[1]], dtype=torch.long)
+        for rowIdx, row in enumerate(opIDsOnMchs):
+            for colIdx, opId in enumerate(row):
+                if opId >=0:
+                    completionTime[rowIdx][colIdx] = mchsStartTimes[rowIdx][colIdx] + durMat[opId//15][opId%15]
+        completionTime.to(configs.device)
         
         node = torch.stack([completionTime, torch.tensor(durMat), torch.arange(0, jNum).expand(mNum, jNum)], dim=2).reshape(jNum * mNum, 3)
         node.to(configs.device)
@@ -183,25 +197,48 @@ class SJSSP(gym.Env, EzPickle):
                     op2 = jobNum*mchMat.shape[1] + idx+1 
                     if op1 in opList and op2 in opList:
                         edge.append([op1, op2])
+        # print(edge)
         edge = np.transpose(edge)
-        dataset = Data(x=node, ei=edge, pos=edge)
+        edge = torch.tensor(edge, dtype=torch.long)
+        edge.to(configs.device)
+        
+        edgeToSearch = []
+        machineNumber = mchMat[action // 15][action%15] -1
+        for element in opIDsOnMchs[machineNumber]:
+            if element >= 0:
+                edgeToSearch.append([element, action])
+                edgeToSearch.append([action, element])
+        # edgeToSearch = np.transpose(edgeToSearch)
+        edgeToSearch = torch.tensor(edgeToSearch, dtype=torch.long)
+        edgeToSearch.to(configs.device)
+        # print(edgeToSearch)
+        # print(action)
+        # print(machineOfAction)
+        # print(opIDsOnMchs[machineOfAction])
+        # print(opIDsOnMchs)
+        
+        # dataset = Data(x=node, ei=edgeToSearch, pos=edge)
+        dataset = Data(x=node, ei=edge, pos=edgeToSearch)
+        dataset.to(configs.device)
+        # print(len(dataset.pos))
+        # print(dataset.ei)
         
         mod.eval()
-        # if isinstance(mod, LocalWLNet):
-        #     pred = mod(
-        #         dataset.x,
-        #         dataset.ei,
-        #         dataset.pos1,
-        #         dataset.ei.shape[1]
-        #         + torch.arange(dataset.y.shape[0], device=configs.device),
-        #         dataset.ei2,
-        #         True,
-        #     )
-        # else:
-        #     pred = mod(dataset.x, dataset.ei, dataset.pos, test=True)
+        if isinstance(mod, LocalWLNet):
+            # print("FLAG")
+            pred = mod(
+                dataset.x,
+                dataset.ei,
+                dataset.pos,
+                True,
+            )
+        else:
+            pred = mod(dataset.x, dataset.ei, dataset.pos, test=True)
         
-        # maxIndex = np.argmax(pred.unsqueeze(-1).tolist())
-        # selectedEdgeIndex = maxIndex
+        maxIndex = np.argmax(pred.unsqueeze(-1).tolist())
+        selectedEdgeIndex = maxIndex
+        edgeToAdd = [dataset.pos[maxIndex], dataset.pos[maxIndex+1]]
+        # print(edgeToAdd)
         
         startTime = 0
         flag = True

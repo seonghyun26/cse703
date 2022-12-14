@@ -147,7 +147,7 @@ class WLNet(torch.nn.Module):
 
         x = torch.cat((x, eim), dim=-1)
 
-        x = mataggr(x, self.h_1, self.g_1, hopNeighbor, self.subgraph)
+        x = mataggr(x, self.h_1, self.g_1)
         x = (x * x.permute(1, 0, 2)).reshape(n * n, -1)
         x = x[pos[:, 0] * n + pos[:, 1]]
         x = self.lin_dir(x)
@@ -989,7 +989,7 @@ class Seq(nn.Module):
         return out
 
 
-def mataggr(A, h, g, adj, subgraph):
+def mataggr(A, h, g):
     """
     A (n, n, d). n is number of node, d is latent dimension
     h, g are mlp
@@ -997,25 +997,9 @@ def mataggr(A, h, g, adj, subgraph):
     B = h(A)
     # C = f(A)
     n, d = A.shape[0], B.shape[2]
-
-    if subgraph == "original":
-        # NOTE: Original Code
-        vec_p = (torch.sum(B, dim=1, keepdim=True)).expand(-1, n, -1)
-        vec_q = (torch.sum(B, dim=0, keepdim=True)).expand(n, -1, -1)
-        D = torch.cat([A, vec_p, vec_q], -1)
-    else:
-        # NOTE: new code, sum k-hop neighbors using adj
-        mask = adj > 0
-        mask = mask.unsqueeze(2)
-        mask = mask.expand(-1, -1, B.shape[2])
-        vec_p = (torch.sum(B * mask, dim=1, keepdim=True)).expand(-1, n, -1)
-        vec_q = (torch.sum(B * mask, dim=0, keepdim=True)).expand(n, -1, -1)
-        # mask2 = torch.matrix_power(adj, 2) > 0
-        # mask2 = mask2.unsqueeze(2)
-        # mask2 = mask2.expand(-1, -1, B.shape[2])
-        # vec_r = (torch.sum(B * mask2, dim=1, keepdim=True)).expand(-1, n, -1)
-        # vec_s = (torch.sum(B * mask2, dim=0, keepdim=True)).expand(n, -1, -1)
-        D = torch.cat([A, vec_p, vec_q], -1)
-        # D = torch.cat([A, vec_p, vec_q, vec_r, vec_s], -1)
+    
+    vec_p = (torch.sum(B, dim=1, keepdim=True)).expand(-1, n, -1)
+    vec_q = (torch.sum(B, dim=0, keepdim=True)).expand(n, -1, -1)
+    D = torch.cat([A, vec_p, vec_q], -1)
 
     return g(D)

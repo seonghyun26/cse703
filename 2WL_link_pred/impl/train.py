@@ -75,18 +75,23 @@ def train(mod, opt, dataset, batch_size, i):
 def test(mod, dataset, test=False):
     mod.eval()
     # x, ei, pos1, y, ei2
-    # pos1 = ei + y
+    # x: node with type
     # pos1 : all edges
-    # ei: 
-    # y : just ture values
+    # ei: edge index, [2, n]
+    # y : just tree values
     # ei2: 
     
     # print(dataset.__dict__)
+    # print(dataset.x.shape)
+    # print(dataset.x)
+    print(type(dataset.ei))
+    print(dataset.ei.shape)
+    print(dataset.ei)
+    exit(0)
+    # print(max(dataset.ei[0]))
     # print(dataset.pos1.shape)
-    # print(dataset.ei.shape)
-    # print(dataset.ei)
-    # print(dataset.ei2.shape)
-    # print(dataset.ei2)
+    # print(dataset.pos1)
+    # print(max(dataset.ei.reshape(2, -1)[0]))
     # exit(0)
     
     if isinstance(mod, LocalWLNet):

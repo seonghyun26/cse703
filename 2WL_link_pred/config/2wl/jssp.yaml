@@ -8,7 +8,7 @@ dp0_1: 0.5
 dp1: 0.1
 dp2: 0.0
 dp3: 0.0
-epoch: 6000
+epoch: 2000
 hidden_dim_1: 48
 hidden_dim_2: 18
 layer1: 2

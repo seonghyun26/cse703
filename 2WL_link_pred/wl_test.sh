@@ -1,7 +1,8 @@
 PATTERN="2wl"
 # 2wl, 2wl_l, 2fwl, 2fwl_l
 
-DATASET="jssp"
+DATASET="Cora"
+# DATASET="jssp"
 # Cora, Citeseer, Pubmed
 # ogbl-ddi ?
 
@@ -13,7 +14,7 @@ python 2WLtest.py \
   --device $1 \
   --seed $SEED \
   --name "jssp test" \
-  --instanceSize "100_20"
+  --instanceSize "30_20"
 
 # python 2WLtest.py \
 #   --pattern $PATTERN \
