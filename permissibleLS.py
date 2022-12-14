@@ -1,6 +1,54 @@
 from Params import configs
 import numpy as np
 
+def rescheduleWithLink(e, a, numMch, durMat, mchMat, mchsStartTimes, opIDsOnMchs):
+    
+    jobRdyTime_a, mchRdyTime_a = calJobAndMchRdyTimeOfa(a, mchMat, durMat, mchsStartTimes, opIDsOnMchs)
+    dur_a = np.take(durMat, a)
+    mch_a = np.take(mchMat, a) - 1
+    startTimesForMchOfa = mchsStartTimes[mch_a]
+    opsIDsForMchOfa = opIDsOnMchs[mch_a]
+    flag = False
+
+    u, v = e[0], e[1]
+
+    if u == a:
+        v_id = np.where(opIDsOnMchs[numMch]==int(v))[0]
+        v_idx = np.where(opIDsOnMchs[numMch]==int(v))[0][0]
+        startTimesOfPossiblePos = startTimesForMchOfa[v_id]
+        durOfPossiblePos = np.take(durMat, opsIDsForMchOfa[v_id])
+        if v_idx == 0:
+            startTimeEarlst = max(jobRdyTime_a, 0)
+            endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
+            flag = True
+            opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, 0, a)[:-1]
+            startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, v_idx, endTimesForPossiblePos)[:-1]
+        else:
+            startTimeEarlst = max(jobRdyTime_a, startTimesForMchOfa[v_idx-1] + np.take(durMat, [opsIDsForMchOfa[v_idx-1]]))
+            endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
+            flag = True
+            opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, v_idx, a)[:-1]
+            startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, v_idx, endTimesForPossiblePos)[:-1]
+
+    elif v == a:
+        u_id = np.where(opIDsOnMchs[numMch]==int(u))[0]
+        u_idx = np.where(opIDsOnMchs[numMch]==int(u))[0][0]
+        startTimesOfPossiblePos = startTimesForMchOfa[u_id+1]
+        durOfPossiblePos = np.take(durMat, opsIDsForMchOfa[u_id+1])
+        startTimeEarlst = max(jobRdyTime_a, startTimesForMchOfa[u_idx+1-1] + np.take(durMat, [opsIDsForMchOfa[u_idx+1-1]]))
+        endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
+        if u == opIDsOnMchs[numMch][sum(opIDsOnMchs[numMch]>0)-1]:
+            opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, u_idx+1, a)[:-1]
+            startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, u_idx+1, endTimesForPossiblePos)[:-1]
+        else:
+            flag = True
+            opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, u_idx+1, a)[:-1]
+            startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, u_idx+1, endTimesForPossiblePos)[:-1]
+
+    startTime_a = int(endTimesForPossiblePos)
+
+    return startTime_a, flag
+
 
 def permissibleLeftShift(a, durMat, mchMat, mchsStartTimes, opIDsOnMchs):
     jobRdyTime_a, mchRdyTime_a = calJobAndMchRdyTimeOfa(a, mchMat, durMat, mchsStartTimes, opIDsOnMchs)

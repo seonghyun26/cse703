@@ -4,7 +4,7 @@ from gym.utils import EzPickle
 from uniform_instance_gen import override
 from updateEntTimeLB import calEndTimeLB
 from Params import configs
-from permissibleLS import permissibleLeftShift
+from permissibleLS import permissibleLeftShift, rescheduleWithLink
 from updateAdjMat import getActionNbghs
 import torch
 import os
@@ -102,6 +102,7 @@ class SJSSP(gym.Env, EzPickle):
             reward = configs.rewardscale
             self.posRewards += reward
         self.max_endTime = self.LBs.max()
+        # print(self.max_endTime)
 
         return self.adj, fea, reward, self.done(), self.omega, self.mask
 
@@ -249,6 +250,6 @@ class SJSSP(gym.Env, EzPickle):
         # TODO: algorithm
         # startTime: new operatioin start time
         # flag: true if other opartion start time changed
-        startTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
-        
+        startTime, flag = rescheduleWithLink(e = edgeToAdd[0], a=action, numMch = machineNumber, durMat = self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
+        # startTime, flag = permissibleLeftShift(a=action, durMat=self.dur, mchMat=self.m, mchsStartTimes=self.mchsStartTimes, opIDsOnMchs=self.opIDsOnMchs)
         return startTime, flag
