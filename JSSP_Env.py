@@ -33,7 +33,7 @@ class SJSSP(gym.Env, EzPickle):
         self.getNghbs = getActionNbghs
         
         # NOTE: generate gnn for each SJSSP instance to use for link prediction
-        model = torch.load(os.getcwd() + PATH + DIR + '2WL_dict_15_15_9.pt')  
+        model = torch.load(os.getcwd() + PATH + DIR + '2WL_dict_15_15_9.pt').to(configs.device)
         model.load_state_dict(torch.load(os.getcwd() + PATH + DIR + '2WL_state_dict_15_15_9.pt'))
         model.to(configs.device)
         # device = torch.device(configs.device)
@@ -237,6 +237,7 @@ class SJSSP(gym.Env, EzPickle):
         
         maxIndex = np.argmax(pred.unsqueeze(-1).tolist())
         selectedEdgeIndex = maxIndex
+        # op -> action, action -> op
         edgeToAdd = [dataset.pos[maxIndex], dataset.pos[maxIndex+1]]
         # print(edgeToAdd)
         
