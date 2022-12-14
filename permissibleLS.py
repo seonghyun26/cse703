@@ -3,51 +3,102 @@ import numpy as np
 
 def rescheduleWithLink(e, a, numMch, durMat, mchMat, mchsStartTimes, opIDsOnMchs):
     
-    jobRdyTime_a, mchRdyTime_a = calJobAndMchRdyTimeOfa(a, mchMat, durMat, mchsStartTimes, opIDsOnMchs)
-    dur_a = np.take(durMat, a)
-    mch_a = np.take(mchMat, a) - 1
-    startTimesForMchOfa = mchsStartTimes[mch_a]
-    opsIDsForMchOfa = opIDsOnMchs[mch_a]
-    flag = False
-
     u, v = e[0], e[1]
 
     if u == a:
         v_id = np.where(opIDsOnMchs[numMch]==int(v))[0]
-        v_idx = np.where(opIDsOnMchs[numMch]==int(v))[0][0]
-        startTimesOfPossiblePos = startTimesForMchOfa[v_id]
-        durOfPossiblePos = np.take(durMat, opsIDsForMchOfa[v_id])
-        if v_idx == 0:
-            startTimeEarlst = max(jobRdyTime_a, 0)
-            endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
-            flag = True
-            opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, 0, a)[:-1]
-            startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, v_idx, endTimesForPossiblePos)[:-1]
-        else:
-            startTimeEarlst = max(jobRdyTime_a, startTimesForMchOfa[v_idx-1] + np.take(durMat, [opsIDsForMchOfa[v_idx-1]]))
-            endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
-            flag = True
-            opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, v_idx, a)[:-1]
-            startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, v_idx, endTimesForPossiblePos)[:-1]
+        jobRdyTime_a, mchRdyTime_a = calJobAndMchRdyTimeOfa(a, mchMat, durMat, mchsStartTimes, opIDsOnMchs)
+        dur_a = np.take(durMat, a)
+        mch_a = np.take(mchMat, a) - 1
+        startTimesForMchOfa = mchsStartTimes[mch_a]
+        opsIDsForMchOfa = opIDsOnMchs[mch_a]
+        flag = False
 
+        possiblePos = [v_id]
+        # print('possiblePos:', possiblePos)
+        if len(possiblePos) == 0:
+            startTime_a = putInTheEnd(a, jobRdyTime_a, mchRdyTime_a, startTimesForMchOfa, opsIDsForMchOfa)
+        else:
+            idxLegalPos, legalPos, endTimesForPossiblePos = calLegalPos(dur_a, jobRdyTime_a, durMat, possiblePos, startTimesForMchOfa, opsIDsForMchOfa)
+            # print('legalPos:', legalPos)
+            if len(legalPos) == 0:
+                startTime_a = putInTheEnd(a, jobRdyTime_a, mchRdyTime_a, startTimesForMchOfa, opsIDsForMchOfa)
+            else:
+                flag = True
+                startTime_a = putInBetween(a, idxLegalPos, legalPos, endTimesForPossiblePos, startTimesForMchOfa, opsIDsForMchOfa)
     elif v == a:
         u_id = np.where(opIDsOnMchs[numMch]==int(u))[0]
-        u_idx = np.where(opIDsOnMchs[numMch]==int(u))[0][0]
-        startTimesOfPossiblePos = startTimesForMchOfa[u_id+1]
-        durOfPossiblePos = np.take(durMat, opsIDsForMchOfa[u_id+1])
-        startTimeEarlst = max(jobRdyTime_a, startTimesForMchOfa[u_idx+1-1] + np.take(durMat, [opsIDsForMchOfa[u_idx+1-1]]))
-        endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
-        if u == opIDsOnMchs[numMch][sum(opIDsOnMchs[numMch]>0)-1]:
-            opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, u_idx+1, a)[:-1]
-            startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, u_idx+1, endTimesForPossiblePos)[:-1]
-        else:
-            flag = True
-            opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, u_idx+1, a)[:-1]
-            startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, u_idx+1, endTimesForPossiblePos)[:-1]
+        jobRdyTime_a, mchRdyTime_a = calJobAndMchRdyTimeOfa(a, mchMat, durMat, mchsStartTimes, opIDsOnMchs)
+        dur_a = np.take(durMat, a)
+        mch_a = np.take(mchMat, a) - 1
+        startTimesForMchOfa = mchsStartTimes[mch_a]
+        opsIDsForMchOfa = opIDsOnMchs[mch_a]
+        flag = False
 
-    startTime_a = int(endTimesForPossiblePos)
+        possiblePos = [u_id+1]
+        # print('possiblePos:', possiblePos)
+        if len(possiblePos) == 0:
+            startTime_a = putInTheEnd(a, jobRdyTime_a, mchRdyTime_a, startTimesForMchOfa, opsIDsForMchOfa)
+        else:
+            idxLegalPos, legalPos, endTimesForPossiblePos = calLegalPos(dur_a, jobRdyTime_a, durMat, possiblePos, startTimesForMchOfa, opsIDsForMchOfa)
+            # print('legalPos:', legalPos)
+            if len(legalPos) == 0:
+                startTime_a = putInTheEnd(a, jobRdyTime_a, mchRdyTime_a, startTimesForMchOfa, opsIDsForMchOfa)
+            else:
+                flag = True
+                startTime_a = putInBetween(a, idxLegalPos, legalPos, endTimesForPossiblePos, startTimesForMchOfa, opsIDsForMchOfa)
 
     return startTime_a, flag
+
+    
+    
+    
+    
+    # jobRdyTime_a, mchRdyTime_a = calJobAndMchRdyTimeOfa(a, mchMat, durMat, mchsStartTimes, opIDsOnMchs)
+    # dur_a = np.take(durMat, a)
+    # mch_a = np.take(mchMat, a) - 1
+    # startTimesForMchOfa = mchsStartTimes[mch_a]
+    # opsIDsForMchOfa = opIDsOnMchs[mch_a]
+    # flag = False
+
+    # u, v = e[0], e[1]
+
+    # if u == a:
+    #     v_id = np.where(opIDsOnMchs[numMch]==int(v))[0]
+    #     v_idx = np.where(opIDsOnMchs[numMch]==int(v))[0][0]
+    #     startTimesOfPossiblePos = startTimesForMchOfa[v_id]
+    #     durOfPossiblePos = np.take(durMat, opsIDsForMchOfa[v_id])
+    #     if v_idx == 0:
+    #         startTimeEarlst = 0
+    #         #endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
+    #         flag = True
+    #         opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, 0, a)[:-1]
+    #         startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, v_idx, startTimeEarlst)[:-1]
+    #     else:
+    #         startTimeEarlst = max(jobRdyTime_a, startTimesForMchOfa[v_id] + np.take(durMat, [opsIDsForMchOfa[v_id]]))
+    #         #endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
+    #         flag = True
+    #         opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, v_idx, a)[:-1]
+    #         startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, v_idx, startTimeEarlst)[:-1]
+
+    # elif v == a:
+    #     u_id = np.where(opIDsOnMchs[numMch]==int(u))[0]
+    #     u_idx = np.where(opIDsOnMchs[numMch]==int(u))[0][0]
+    #     startTimesOfPossiblePos = startTimesForMchOfa[u_id+1]
+    #     durOfPossiblePos = np.take(durMat, opsIDsForMchOfa[u_id+1])
+    #     startTimeEarlst = max(jobRdyTime_a, startTimesForMchOfa[u_id] + np.take(durMat, [opsIDsForMchOfa[u_id]]))
+    #     # endTimesForPossiblePos = np.append(startTimeEarlst, (startTimesOfPossiblePos + durOfPossiblePos))[:-1]# end time for last ops don't care
+    #     if u == opIDsOnMchs[numMch][sum(opIDsOnMchs[numMch]>0)-1]:
+    #         opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, u_idx+1, a)[:-1]
+    #         startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, u_idx+1, startTimeEarlst )[:-1]
+    #     else:
+    #         flag = True
+    #         opsIDsForMchOfa[:] = np.insert(opsIDsForMchOfa, u_idx+1, a)[:-1]
+    #         startTimesForMchOfa[:] = np.insert(startTimesForMchOfa, u_idx+1, startTimeEarlst )[:-1]
+
+    # startTime_a = int(startTimeEarlst)
+
+    # return startTime_a, flag
 
 
 def permissibleLeftShift(a, durMat, mchMat, mchsStartTimes, opIDsOnMchs):

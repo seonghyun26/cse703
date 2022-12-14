@@ -9,10 +9,10 @@ import time
 device = configs.device
 
 parser = argparse.ArgumentParser(description='Arguments for test_learned_on_benchmark')
-parser.add_argument('--Pn_j', type=int, default=15, help='Number of jobs of instances to test')
-parser.add_argument('--Pn_m', type=int, default=15, help='Number of machines instances to test')
-parser.add_argument('--Nn_j', type=int, default=15, help='Number of jobs on which to be loaded net are trained')
-parser.add_argument('--Nn_m', type=int, default=15, help='Number of machines on which to be loaded net are trained')
+parser.add_argument('--Pn_j', type=int, default=20, help='Number of jobs of instances to test')
+parser.add_argument('--Pn_m', type=int, default=20, help='Number of machines instances to test')
+parser.add_argument('--Nn_j', type=int, default=30, help='Number of jobs on which to be loaded net are trained')
+parser.add_argument('--Nn_m', type=int, default=20, help='Number of machines on which to be loaded net are trained')
 parser.add_argument('--which_benchmark', type=str, default='tai', help='Which benchmark to test')
 params = parser.parse_args()
 
